@@ -1,5 +1,7 @@
 import ResourcePage from './ResourcePage.jsx'
 
+// Expected endpoint: -8000.app.github.dev/api/activities
+
 export default function Activities() {
   return (
     <ResourcePage

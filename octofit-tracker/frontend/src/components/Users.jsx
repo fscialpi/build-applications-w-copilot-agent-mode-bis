@@ -1,5 +1,7 @@
 import ResourcePage from './ResourcePage.jsx'
 
+// Expected endpoint: -8000.app.github.dev/api/users
+
 export default function Users() {
   return (
     <ResourcePage
