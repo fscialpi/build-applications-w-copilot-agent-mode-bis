@@ -1,4 +1,10 @@
 import { Router } from 'express';
+import { Model } from 'mongoose';
+import { Activity } from '../models/Activity';
+import { Leaderboard } from '../models/Leaderboard';
+import { Team } from '../models/Team';
+import { User } from '../models/User';
+import { Workout } from '../models/Workout';
 
 type ResourceName =
   | 'users'
@@ -15,6 +21,35 @@ const getApiBaseUrl = () => {
   }
 
   return 'http://localhost:8000';
+};
+
+const resourceModels = {
+  users: User,
+  teams: Team,
+  activities: Activity,
+  leaderboard: Leaderboard,
+  workouts: Workout,
+} as const;
+
+const resourcePopulation = {
+  users: [],
+  teams: ['members'],
+  activities: ['user'],
+  leaderboard: ['user'],
+  workouts: [],
+} as const;
+
+const findResources = async (
+  model: Model<any>,
+  populatePaths: readonly string[],
+) => {
+  const query = model.find().sort({ createdAt: 1 });
+
+  if (populatePaths.length === 0) {
+    return query.lean().exec();
+  }
+
+  return query.populate(populatePaths as string[]).lean().exec();
 };
 
 const buildResourcePayload = (resource: ResourceName) => {
@@ -35,8 +70,20 @@ const buildResourcePayload = (resource: ResourceName) => {
 export const createResourceRouter = (resource: ResourceName) => {
   const router = Router();
 
-  router.get('/', (_req, res) => {
-    res.json(buildResourcePayload(resource));
+  router.get('/', async (_req, res, next) => {
+    try {
+      const model = resourceModels[resource];
+      const populatePaths = resourcePopulation[resource];
+      const data = await findResources(model, populatePaths);
+
+      res.json({
+        ...buildResourcePayload(resource),
+        count: data.length,
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   return router;
